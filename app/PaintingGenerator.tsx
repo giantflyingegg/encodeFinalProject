@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "ai/react";
 
 const themes = ["Renaissance", "Impressionism", "Surrealism", "Abstract", "Pop Art"];
+const imgThemes = ["anime", "futuristic"];
 
 function debounce(func: Function, wait: number) {
   let timeout: NodeJS.Timeout | null = null;
@@ -21,6 +22,7 @@ function debounce(func: Function, wait: number) {
 
 export default function PaintingGenerator() {
   const [theme, setTheme] = useState("");
+  const [imgTheme, setImgTheme] = useState("anime");
   const [userDescription, setUserDescription] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -100,7 +102,11 @@ export default function PaintingGenerator() {
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: description, ...imageParams }),
+        body: JSON.stringify({ 
+          prompt: description, 
+          ...imageParams, 
+          theme: imgTheme 
+        }),
       });
       
       if (!response.ok) {
@@ -211,6 +217,15 @@ export default function PaintingGenerator() {
           >
             <option value="vivid">Vivid</option>
             <option value="natural">Natural</option>
+          </select>
+          <select
+            value={imgTheme}
+            onChange={(e) => setImgTheme(e.target.value)}
+            className="p-2 border rounded"
+          >
+            {imgThemes.map((t) => (
+              <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+            ))}
           </select>
         </div>
       </div>
