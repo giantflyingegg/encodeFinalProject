@@ -41,7 +41,6 @@ export default function PaintingGenerator() {
     api: "/api/chat",
   });
 
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastProcessedMessageRef = useRef<string | null>(null);
 
@@ -76,9 +75,7 @@ export default function PaintingGenerator() {
       const audioUrl = URL.createObjectURL(audioBlob);
       setAudioUrl(audioUrl);
 
-      if (audioRef.current) {
-        audioRef.current.play();
-      }
+      // We'll play the audio in the useEffect hook
     } catch (error) {
       console.error("Error generating speech:", error);
     }
@@ -120,6 +117,13 @@ export default function PaintingGenerator() {
       }
     }
   }, [messages, debouncedGenerateSpeech]);
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play().catch(error => console.error("Error playing audio:", error));
+    }
+  }, [audioUrl]);
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
@@ -167,20 +171,11 @@ export default function PaintingGenerator() {
           <p className="p-2 bg-gray-100 rounded">{description}</p>
           {audioUrl && (
             <div className="mt-2">
-              <audio ref={audioRef} controls src={audioUrl} className="w-full" />
+              <audio ref={audioRef} controls className="w-full" />
             </div>
           )}
         </div>
       )}
-
-      <div className="border p-4 mb-4 h-64 overflow-y-auto" ref={messagesContainerRef}>
-        {messages.map((m) => (
-          <div key={m.id} className={`mb-2 ${m.role === "user" ? "text-green-500" : "text-blue-500"}`}>
-            <strong>{m.role === "user" ? "User: " : "AI: "}</strong>
-            {m.content}
-          </div>
-        ))}
-      </div>
 
       <div className="mb-4">
         <h2 className="text-xl mb-2">Image Generation Parameters:</h2>
