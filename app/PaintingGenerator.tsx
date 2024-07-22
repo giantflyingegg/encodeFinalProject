@@ -75,9 +75,7 @@ export default function PaintingGenerator() {
       const audioUrl = URL.createObjectURL(audioBlob);
       setAudioUrl(audioUrl);
 
-      if (audioRef.current) {
-        audioRef.current.play();
-      }
+      // We'll play the audio in the useEffect hook
     } catch (error) {
       console.error("Error generating speech:", error);
     }
@@ -119,6 +117,13 @@ export default function PaintingGenerator() {
       }
     }
   }, [messages, debouncedGenerateSpeech]);
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play().catch(error => console.error("Error playing audio:", error));
+    }
+  }, [audioUrl]);
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
@@ -166,7 +171,7 @@ export default function PaintingGenerator() {
           <p className="p-2 bg-gray-100 rounded">{description}</p>
           {audioUrl && (
             <div className="mt-2">
-              <audio ref={audioRef} controls src={audioUrl} className="w-full" />
+              <audio ref={audioRef} controls className="w-full" />
             </div>
           )}
         </div>
