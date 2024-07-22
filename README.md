@@ -1,6 +1,10 @@
-# AI Bootcamp Homework 2 - Group 1
+# Encode Club AI Bootcamp Final Project
 
-This project was created as homework for the encode club AI bootcamp.  It is a Next.js application leveraging the OpenAI API that generates painting descriptions using user input and preselected styles and then uses these prompts to generate images.
+This project was created as the final project for the encode club AI bootcamp.  I wanted to develop my experience working with Next.js, as well as Typescript.  This project leverages a wide array of functions, from calls to the OpenAI API for chat and TTS Whisper, to using stable diffusion models locally.
+
+The aim of the project is to deepen my understanding and experience with integrating AI models into both the front, and back ends of the build.  It generates image prompts for txt2img incorporating user input.  The prompt is then spoken back to the user while their image is being created.
+
+The user then has basic UI functions to interact with the models.
 
 ## Prerequisites
 
@@ -14,7 +18,7 @@ Before you begin, ensure you have the following installed on your system:
 
 1. Clone the repository:
 
-`git clone https://github.com/giantflyingegg/ai-bootcamp-homework-2-Group1.git`
+`git clone https://github.com/giantflyingegg/encodeFinalProject.git`
    
 2. Navigate to the project directory:
 
