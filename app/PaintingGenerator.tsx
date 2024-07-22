@@ -75,7 +75,9 @@ export default function PaintingGenerator() {
       const audioUrl = URL.createObjectURL(audioBlob);
       setAudioUrl(audioUrl);
 
-      // We'll play the audio in the useEffect hook
+      if (audioRef.current) {
+        audioRef.current.play();
+      }
     } catch (error) {
       console.error("Error generating speech:", error);
     }
@@ -100,10 +102,22 @@ export default function PaintingGenerator() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: description, ...imageParams }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setImageUrl(data.url);
+      if (data.imageData) {
+        setImageUrl(data.imageData);
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error("Unexpected response format");
+      }
     } catch (error) {
       console.error("Error generating image:", error);
+      alert(`Failed to generate image: ${error}`);
     }
     setIsGeneratingImage(false);
   };
@@ -117,13 +131,6 @@ export default function PaintingGenerator() {
       }
     }
   }, [messages, debouncedGenerateSpeech]);
-
-  useEffect(() => {
-    if (audioUrl && audioRef.current) {
-      audioRef.current.src = audioUrl;
-      audioRef.current.play().catch(error => console.error("Error playing audio:", error));
-    }
-  }, [audioUrl]);
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
@@ -171,7 +178,7 @@ export default function PaintingGenerator() {
           <p className="p-2 bg-gray-100 rounded">{description}</p>
           {audioUrl && (
             <div className="mt-2">
-              <audio ref={audioRef} controls className="w-full" />
+              <audio ref={audioRef} controls src={audioUrl} className="w-full" />
             </div>
           )}
         </div>
@@ -213,7 +220,7 @@ export default function PaintingGenerator() {
         disabled={!description || isGeneratingImage}
         className="bg-purple-500 text-white px-4 py-2 rounded mb-4"
       >
-        Generate Image
+        {isGeneratingImage ? "Generating..." : "Generate Image"}
       </button>
 
       {isGeneratingImage && <div className="text-center">Generating image...</div>}
