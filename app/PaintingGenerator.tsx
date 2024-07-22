@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "ai/react";
 
 const themes = ["Renaissance", "Impressionism", "Surrealism", "Abstract", "Pop Art"];
-const imgThemes = ["anime", "futuristic"];
 
 function debounce(func: Function, wait: number) {
   let timeout: NodeJS.Timeout | null = null;
@@ -22,18 +21,19 @@ function debounce(func: Function, wait: number) {
 
 export default function PaintingGenerator() {
   const [theme, setTheme] = useState("");
-  const [imgTheme, setImgTheme] = useState("anime");
   const [userDescription, setUserDescription] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [isRefiningImage, setIsRefiningImage] = useState(false);
   const [imageParams, setImageParams] = useState({
     size: "1024x1024",
     quality: "standard",
     style: "vivid",
   });
+  const [refinementTheme, setRefinementTheme] = useState("futuristic");
 
   const {
     messages,
@@ -96,8 +96,9 @@ export default function PaintingGenerator() {
     [generateSpeech]
   );
 
-  const generateImage = async () => {
-    setIsGeneratingImage(true);
+  const generateImage = async (isRefining: boolean = false) => {
+    const actionType = isRefining ? setIsRefiningImage : setIsGeneratingImage;
+    actionType(true);
     try {
       const response = await fetch("/api/generate-image", {
         method: "POST",
@@ -105,7 +106,8 @@ export default function PaintingGenerator() {
         body: JSON.stringify({ 
           prompt: description, 
           ...imageParams, 
-          theme: imgTheme 
+          theme: isRefining ? refinementTheme : undefined,
+          initialImage: isRefining ? imageUrl : undefined,
         }),
       });
       
@@ -125,7 +127,7 @@ export default function PaintingGenerator() {
       console.error("Error generating image:", error);
       alert(`Failed to generate image: ${error}`);
     }
-    setIsGeneratingImage(false);
+    actionType(false);
   };
 
   useEffect(() => {
@@ -140,7 +142,7 @@ export default function PaintingGenerator() {
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
-      <h1 className="text-2xl font-bold mb-4">Painting Generator</h1>
+      <h1 className="text-2xl font-bold mb-4">SDXL Painting Generator</h1>
       
       <div className="mb-4">
         <h2 className="text-xl mb-2">Select a Theme:</h2>
@@ -191,7 +193,7 @@ export default function PaintingGenerator() {
       )}
 
       <div className="mb-4">
-        <h2 className="text-xl mb-2">Image Generation Parameters:</h2>
+        <h2 className="text-xl mb-2">SDXL Image Generation Parameters:</h2>
         <div className="flex flex-col gap-2">
           <select
             value={imageParams.size}
@@ -199,8 +201,8 @@ export default function PaintingGenerator() {
             className="p-2 border rounded"
           >
             <option value="1024x1024">1024x1024</option>
-            <option value="512x512">512x512</option>
-            <option value="256x256">256x256</option>
+            <option value="896x1152">896x1152</option>
+            <option value="1152x896">1152x896</option>
           </select>
           <select
             value={imageParams.quality}
@@ -218,24 +220,15 @@ export default function PaintingGenerator() {
             <option value="vivid">Vivid</option>
             <option value="natural">Natural</option>
           </select>
-          <select
-            value={imgTheme}
-            onChange={(e) => setImgTheme(e.target.value)}
-            className="p-2 border rounded"
-          >
-            {imgThemes.map((t) => (
-              <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-            ))}
-          </select>
         </div>
       </div>
 
       <button
-        onClick={generateImage}
+        onClick={() => generateImage(false)}
         disabled={!description || isGeneratingImage}
         className="bg-purple-500 text-white px-4 py-2 rounded mb-4"
       >
-        {isGeneratingImage ? "Generating..." : "Generate Image"}
+        {isGeneratingImage ? "Generating..." : "Generate Image with SDXL"}
       </button>
 
       {isGeneratingImage && <div className="text-center">Generating image...</div>}
@@ -244,7 +237,25 @@ export default function PaintingGenerator() {
       {imageUrl && (
         <div className="mt-4">
           <h2 className="text-xl mb-2">Generated Image:</h2>
-          <img src={imageUrl} alt="Generated painting" className="w-full" />
+          <img src={imageUrl} alt="Generated painting" className="w-full mb-4" />
+          
+          <h3 className="text-lg mb-2">Refine with Dreamshaper:</h3>
+          <select
+            value={refinementTheme}
+            onChange={(e) => setRefinementTheme(e.target.value)}
+            className="p-2 border rounded mb-2"
+          >
+            <option value="futuristic">Futuristic</option>
+            <option value="anime">Anime</option>
+          </select>
+          
+          <button
+            onClick={() => generateImage(true)}
+            disabled={isRefiningImage}
+            className="bg-indigo-500 text-white px-4 py-2 rounded"
+          >
+            {isRefiningImage ? "Refining..." : "Refine Image with Dreamshaper"}
+          </button>
         </div>
       )}
     </div>
