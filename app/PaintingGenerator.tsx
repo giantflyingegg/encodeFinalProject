@@ -1,9 +1,23 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "ai/react";
 
 const themes = ["Renaissance", "Impressionism", "Surrealism", "Abstract", "Pop Art"];
+
+function debounce(func: Function, wait: number) {
+  let timeout: NodeJS.Timeout | null = null;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(later, wait);
+  };
+}
 
 export default function PaintingGenerator() {
   const [theme, setTheme] = useState("");
@@ -27,15 +41,9 @@ export default function PaintingGenerator() {
     api: "/api/chat",
   });
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    if (messages.length > 0 && messages[messages.length - 1].role === "assistant") {
-      const newDescription = messages[messages.length - 1].content;
-      setDescription(newDescription);
-      generateSpeech(newDescription);
-    }
-  }, [messages]);
+  const lastProcessedMessageRef = useRef<string | null>(null);
 
   const handleThemeSelect = (selectedTheme: string) => {
     setTheme(selectedTheme);
@@ -50,7 +58,8 @@ export default function PaintingGenerator() {
     });
   };
 
-  const generateSpeech = async (text: string) => {
+  const generateSpeech = useCallback(async (text: string) => {
+    if (isGeneratingAudio) return;
     setIsGeneratingAudio(true);
     try {
       const response = await fetch("/api/tts", {
@@ -74,7 +83,17 @@ export default function PaintingGenerator() {
       console.error("Error generating speech:", error);
     }
     setIsGeneratingAudio(false);
-  };
+  }, [isGeneratingAudio]);
+
+  const debouncedGenerateSpeech = useCallback(
+    debounce((text: string) => {
+      if (text !== lastProcessedMessageRef.current) {
+        generateSpeech(text);
+        lastProcessedMessageRef.current = text;
+      }
+    }, 1000),
+    [generateSpeech]
+  );
 
   const generateImage = async () => {
     setIsGeneratingImage(true);
@@ -91,6 +110,16 @@ export default function PaintingGenerator() {
     }
     setIsGeneratingImage(false);
   };
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "assistant") {
+        setDescription(lastMessage.content);
+        debouncedGenerateSpeech(lastMessage.content);
+      }
+    }
+  }, [messages, debouncedGenerateSpeech]);
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
@@ -129,16 +158,10 @@ export default function PaintingGenerator() {
         disabled={(!theme && !userDescription) || isLoading}
         className="bg-green-500 text-white px-4 py-2 rounded mb-4"
       >
-        {isLoading ? 'Generating...' : 'Generate Painting Description'}
+        Generate Painting Description
       </button>
 
-      {isLoading && (
-        <div className="mb-4">
-          <p className="text-gray-600">Generating description...</p>
-        </div>
-      )}
-
-      {description && !isLoading && (
+      {description && (
         <div className="mb-4">
           <h2 className="text-xl mb-2">Generated Description:</h2>
           <p className="p-2 bg-gray-100 rounded">{description}</p>
@@ -149,6 +172,15 @@ export default function PaintingGenerator() {
           )}
         </div>
       )}
+
+      <div className="border p-4 mb-4 h-64 overflow-y-auto" ref={messagesContainerRef}>
+        {messages.map((m) => (
+          <div key={m.id} className={`mb-2 ${m.role === "user" ? "text-green-500" : "text-blue-500"}`}>
+            <strong>{m.role === "user" ? "User: " : "AI: "}</strong>
+            {m.content}
+          </div>
+        ))}
+      </div>
 
       <div className="mb-4">
         <h2 className="text-xl mb-2">Image Generation Parameters:</h2>
@@ -186,16 +218,10 @@ export default function PaintingGenerator() {
         disabled={!description || isGeneratingImage}
         className="bg-purple-500 text-white px-4 py-2 rounded mb-4"
       >
-        {isGeneratingImage ? 'Generating Image...' : 'Generate Image'}
+        Generate Image
       </button>
 
-      {isGeneratingImage && (
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          <p className="mt-2">Generating image...</p>
-        </div>
-      )}
-
+      {isGeneratingImage && <div className="text-center">Generating image...</div>}
       {isGeneratingAudio && <div className="text-center">Generating audio...</div>}
 
       {imageUrl && (
