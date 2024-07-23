@@ -1,7 +1,7 @@
 // app/page.tsx
 
-import PaintingGenerator from './PaintingGenerator';
+import StableDiffusionShowcase from './StableDiffusionShowcase';
 
 export default function Home() {
-  return <PaintingGenerator />;
+  return <StableDiffusionShowcase />;
 }
