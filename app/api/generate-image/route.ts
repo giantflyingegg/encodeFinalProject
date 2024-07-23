@@ -1,79 +1,86 @@
 import { NextResponse } from 'next/server';
 
-const SD_API_URL = 'http://127.0.0.1:7860/sdapi/v1/txt2img';
+const SD_API_URL = 'http://127.0.0.1:7860/sdapi/v1';
+
+async function fetchAvailableSamplers() {
+  const response = await fetch(`${SD_API_URL}/samplers`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch samplers: ${response.statusText}`);
+  }
+  return await response.json();
+}
+
+async function generateImage(endpoint: string, params: any) {
+  // Fetch available samplers
+  const samplers = await fetchAvailableSamplers();
+  console.log('Available samplers:', samplers.map((s: any) => s.name));
+
+  // Check if the specified sampler is available, otherwise use a default
+  const defaultSampler = 'Euler a';
+  if (!samplers.some((s: any) => s.name === params.sampler_name)) {
+    console.log(`Sampler "${params.sampler_name}" not found. Using default: ${defaultSampler}`);
+    params.sampler_name = defaultSampler;
+  }
+
+  const response = await fetch(`${SD_API_URL}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, message: ${text}`);
+  }
+
+  return await response.json();
+}
 
 export async function POST(req: Request) {
   console.log('Received request to generate image');
   try {
-    const { prompt, size, quality, style } = await req.json();
-    console.log('Request parameters:', { prompt, size, quality, style });
+    const { prompt, size, quality, style, model } = await req.json();
+    console.log('Request parameters:', { prompt, size, quality, style, model });
 
-    // Convert size to width and height
     const [width, height] = size.split('x').map(Number);
-
-    // Map quality and style to SD parameters
     const steps = quality === 'hd' ? 50 : 30;
     const cfg_scale = style === 'vivid' ? 7.5 : 7.0;
 
-    // First, fetch available samplers
-    console.log('Fetching available samplers...');
-    const samplersResponse = await fetch(`${SD_API_URL.replace('txt2img', 'samplers')}`);
-    if (!samplersResponse.ok) {
-      throw new Error(`Failed to fetch samplers: ${samplersResponse.statusText}`);
-    }
-    const samplers = await samplersResponse.json();
-    console.log('Available samplers:', samplers);
-
-    // Choose the first available sampler
-    const sampler_name = samplers[0]?.name || 'Euler a';
-    console.log('Selected sampler:', sampler_name);
-
-    const requestBody = JSON.stringify({
+    let params: any = {
       prompt: prompt,
       negative_prompt: '',
       width: width,
       height: height,
       steps: steps,
       cfg_scale: cfg_scale,
-      sampler_name: sampler_name,
+      sampler_name: 'DPM++ 2M Karras',
       batch_size: 1,
       n_iter: 1,
       seed: -1,
-    });
+    };
 
-    console.log('Sending request to Stable Diffusion API...');
-    console.log('Request body:', requestBody);
-
-    const response = await fetch(SD_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: requestBody,
-    });
-
-    console.log('Received response from Stable Diffusion API');
-    console.log('Response status:', response.status);
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error('API responded with error. Response text:', responseText);
-      throw new Error(`HTTP error! status: ${response.status}, message: ${responseText}`);
+    if (model === 'sdxl') {
+      params.override_settings = {
+        sd_model_checkpoint: 'sd_xl_base_1.0.safetensors' // Adjust this to your SDXL model filename
+      };
+    } else if (model === 'dreamshaper') {
+      params.override_settings = {
+        sd_model_checkpoint: 'dreamshaper_8.safetensors' // Adjust this to your Dreamshaper model filename
+      };
+    } else {
+      throw new Error('Invalid model specified');
     }
 
-    const data = await response.json();
-    console.log('Successfully parsed response JSON');
-
-    if (!data.images || data.images.length === 0) {
-      console.error('No image data in the response');
+    console.log(`Generating image with ${model.toUpperCase()}...`);
+    const result = await generateImage('txt2img', params);
+    
+    if (!result.images || result.images.length === 0) {
       throw new Error('No image generated');
     }
 
-    // The image is returned as a base64 string
-    const imageBase64 = data.images[0];
-    console.log('Successfully extracted image data');
+    const imageBase64 = result.images[0];
+    console.log('Successfully generated image');
 
-    // Send the base64 string directly
     return NextResponse.json({ imageData: `data:image/png;base64,${imageBase64}` });
 
   } catch (error) {

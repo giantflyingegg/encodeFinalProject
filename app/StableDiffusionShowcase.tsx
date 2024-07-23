@@ -3,7 +3,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "ai/react";
 
-const themes = ["Renaissance", "Impressionism", "Surrealism", "Abstract", "Pop Art"];
+const sdxlCategories = [
+  "Photorealistic Landscapes",
+  "Detailed Portraits",
+  "Complex Architectural Designs",
+  "Fine Art Recreations",
+  "Intricate Textures and Patterns"
+];
+
+const dreamshaperCategories = [
+  "Fantasy Creatures",
+  "Sci-Fi Environments",
+  "Stylized Character Designs",
+  "Abstract Concept Visualizations",
+  "Surreal Dreamscapes"
+];
 
 function debounce(func: Function, wait: number) {
   let timeout: NodeJS.Timeout | null = null;
@@ -19,10 +33,11 @@ function debounce(func: Function, wait: number) {
   };
 }
 
-export default function PaintingGenerator() {
-  const [theme, setTheme] = useState("");
+export default function StableDiffusionShowcase() {
+  const [model, setModel] = useState<"sdxl" | "dreamshaper">("sdxl");
+  const [category, setCategory] = useState("");
   const [userDescription, setUserDescription] = useState("");
-  const [description, setDescription] = useState("");
+  const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -39,18 +54,24 @@ export default function PaintingGenerator() {
     append,
   } = useChat({
     api: "/api/chat",
+    body: { model, category },
   });
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastProcessedMessageRef = useRef<string | null>(null);
 
-  const handleThemeSelect = (selectedTheme: string) => {
-    setTheme(selectedTheme);
+  const handleModelSelect = (selectedModel: "sdxl" | "dreamshaper") => {
+    setModel(selectedModel);
+    setCategory(""); // Reset category when model changes
   };
 
-  const generateDescription = async () => {
-    if (!theme && !userDescription) return;
-    const promptForAI = `Generate a detailed prompt for image generation of a ${theme} style painting ${userDescription ? `with the following elements: ${userDescription}` : ''}.`;
+  const handleCategorySelect = (selectedCategory: string) => {
+    setCategory(selectedCategory);
+  };
+
+  const generatePrompt = async () => {
+    if (!category && !userDescription) return;
+    const promptForAI = `Generate a detailed prompt for image generation of a ${category} using ${model === "sdxl" ? "SDXL" : "Dreamshaper"} ${userDescription ? `with the following elements: ${userDescription}` : ''}.`;
     await append({
       role: "user",
       content: promptForAI,
@@ -100,7 +121,11 @@ export default function PaintingGenerator() {
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: description, ...imageParams }),
+        body: JSON.stringify({ 
+          prompt: generatedPrompt, 
+          ...imageParams,
+          model: model,
+        }),
       });
       
       if (!response.ok) {
@@ -126,7 +151,7 @@ export default function PaintingGenerator() {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === "assistant") {
-        setDescription(lastMessage.content);
+        setGeneratedPrompt(lastMessage.content);
         debouncedGenerateSpeech(lastMessage.content);
       }
     }
@@ -134,20 +159,42 @@ export default function PaintingGenerator() {
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
-      <h1 className="text-2xl font-bold mb-4">Painting Generator</h1>
+      <h1 className="text-2xl font-bold mb-4">Stable Diffusion Showcase</h1>
       
       <div className="mb-4">
-        <h2 className="text-xl mb-2">Select a Theme:</h2>
+        <h2 className="text-xl mb-2">Select a Model:</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleModelSelect("sdxl")}
+            className={`px-3 py-1 rounded ${
+              model === "sdxl" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+            }`}
+          >
+            SDXL
+          </button>
+          <button
+            onClick={() => handleModelSelect("dreamshaper")}
+            className={`px-3 py-1 rounded ${
+              model === "dreamshaper" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+            }`}
+          >
+            Dreamshaper
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <h2 className="text-xl mb-2">Select a Category:</h2>
         <div className="flex flex-wrap gap-2">
-          {themes.map((t) => (
+          {(model === "sdxl" ? sdxlCategories : dreamshaperCategories).map((cat) => (
             <button
-              key={t}
-              onClick={() => handleThemeSelect(t)}
+              key={cat}
+              onClick={() => handleCategorySelect(cat)}
               className={`px-3 py-1 rounded ${
-                theme === t ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+                category === cat ? "bg-green-500 text-white" : "bg-gray-200 text-black"
               }`}
             >
-              {t}
+              {cat}
             </button>
           ))}
         </div>
@@ -160,22 +207,22 @@ export default function PaintingGenerator() {
           onChange={(e) => setUserDescription(e.target.value)}
           className="w-full p-2 border rounded"
           rows={3}
-          placeholder="Describe your painting..."
+          placeholder="Add details to your image description..."
         />
       </div>
 
       <button
-        onClick={generateDescription}
-        disabled={(!theme && !userDescription) || isLoading}
+        onClick={generatePrompt}
+        disabled={(!category && !userDescription) || isLoading}
         className="bg-green-500 text-white px-4 py-2 rounded mb-4"
       >
-        Generate Painting Description
+        Generate Image Prompt
       </button>
 
-      {description && (
+      {generatedPrompt && (
         <div className="mb-4">
-          <h2 className="text-xl mb-2">Generated Description:</h2>
-          <p className="p-2 bg-gray-100 rounded">{description}</p>
+          <h2 className="text-xl mb-2">Generated Prompt:</h2>
+          <p className="p-2 bg-gray-100 rounded">{generatedPrompt}</p>
           {audioUrl && (
             <div className="mt-2">
               <audio ref={audioRef} controls src={audioUrl} className="w-full" />
@@ -193,8 +240,8 @@ export default function PaintingGenerator() {
             className="p-2 border rounded"
           >
             <option value="1024x1024">1024x1024</option>
-            <option value="512x512">512x512</option>
-            <option value="256x256">256x256</option>
+            <option value="896x1152">896x1152</option>
+            <option value="1152x896">1152x896</option>
           </select>
           <select
             value={imageParams.quality}
@@ -217,10 +264,10 @@ export default function PaintingGenerator() {
 
       <button
         onClick={generateImage}
-        disabled={!description || isGeneratingImage}
+        disabled={!generatedPrompt || isGeneratingImage}
         className="bg-purple-500 text-white px-4 py-2 rounded mb-4"
       >
-        {isGeneratingImage ? "Generating..." : "Generate Image"}
+        {isGeneratingImage ? "Generating..." : `Generate Image with ${model === "sdxl" ? "SDXL" : "Dreamshaper"}`}
       </button>
 
       {isGeneratingImage && <div className="text-center">Generating image...</div>}
@@ -229,7 +276,7 @@ export default function PaintingGenerator() {
       {imageUrl && (
         <div className="mt-4">
           <h2 className="text-xl mb-2">Generated Image:</h2>
-          <img src={imageUrl} alt="Generated painting" className="w-full" />
+          <img src={imageUrl} alt="Generated image" className="w-full mb-4" />
         </div>
       )}
     </div>
