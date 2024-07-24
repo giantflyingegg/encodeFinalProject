@@ -11,6 +11,15 @@ const categories = [
   "Character Designs",
 ];
 
+const samplingAlgorithms = [
+  "Euler",
+  "Euler a",
+  "Heun",
+  "DPM++ 2M Karras",
+  "DPM++ SDE Karras",
+  "DDIM",
+];
+
 export default function ModelComparison() {
   const [category, setCategory] = useState("");
   const [userDescription, setUserDescription] = useState("");
@@ -22,6 +31,11 @@ export default function ModelComparison() {
     size: "1024x1024",
     quality: "standard",
     style: "vivid",
+    steps: 30,
+    cfgScale: 7,
+    denoisingStrength: 0.7,
+    sdxlSampler: "Euler",
+    dreamshaperSampler: "Euler",
   });
 
   const { messages, append, isLoading } = useChat({
@@ -31,7 +45,9 @@ export default function ModelComparison() {
 
   const generatePrompt = async () => {
     if (!category && !userDescription) return;
-    const promptForAI = `Create a concise prompt (50 words max) for image generation that works well with both SDXL and Dreamshaper models. The image should be a ${category}${userDescription ? ` with these elements: ${userDescription}` : ''}.`;
+    const promptForAI = `Generate a detailed prompt for image generation of a ${category} ${
+      userDescription ? `with the following elements: ${userDescription}` : ""
+    }. The prompt should be suitable for both SDXL and Dreamshaper models.`;
     await append({
       role: "user",
       content: promptForAI,
@@ -49,6 +65,7 @@ export default function ModelComparison() {
             prompt: generatedPrompt,
             ...imageParams,
             model: "sdxl",
+            sampler: imageParams.sdxlSampler,
           }),
         }),
         fetch("/api/generate-image", {
@@ -58,6 +75,7 @@ export default function ModelComparison() {
             prompt: generatedPrompt,
             ...imageParams,
             model: "dreamshaper",
+            sampler: imageParams.dreamshaperSampler,
           }),
         }),
       ]);
@@ -136,32 +154,100 @@ export default function ModelComparison() {
 
       <div className="mb-4">
         <h2 className="text-xl mb-2">Image Generation Parameters:</h2>
-        <div className="flex flex-col gap-2">
-          <select
-            value={imageParams.size}
-            onChange={(e) => setImageParams({ ...imageParams, size: e.target.value })}
-            className="p-2 border rounded"
-          >
-            <option value="1024x1024">1024x1024</option>
-            <option value="896x1152">896x1152</option>
-            <option value="1152x896">1152x896</option>
-          </select>
-          <select
-            value={imageParams.quality}
-            onChange={(e) => setImageParams({ ...imageParams, quality: e.target.value })}
-            className="p-2 border rounded"
-          >
-            <option value="standard">Standard</option>
-            <option value="hd">HD</option>
-          </select>
-          <select
-            value={imageParams.style}
-            onChange={(e) => setImageParams({ ...imageParams, style: e.target.value })}
-            className="p-2 border rounded"
-          >
-            <option value="vivid">Vivid</option>
-            <option value="natural">Natural</option>
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-2">Size:</label>
+            <select
+              value={imageParams.size}
+              onChange={(e) => setImageParams({ ...imageParams, size: e.target.value })}
+              className="w-full p-2 border rounded"
+            >
+              <option value="1024x1024">1024x1024</option>
+              <option value="896x1152">896x1152</option>
+              <option value="1152x896">1152x896</option>
+            </select>
+          </div>
+          <div>
+            <label className="block mb-2">Quality:</label>
+            <select
+              value={imageParams.quality}
+              onChange={(e) => setImageParams({ ...imageParams, quality: e.target.value })}
+              className="w-full p-2 border rounded"
+            >
+              <option value="standard">Standard</option>
+              <option value="hd">HD</option>
+            </select>
+          </div>
+          <div>
+            <label className="block mb-2">Style:</label>
+            <select
+              value={imageParams.style}
+              onChange={(e) => setImageParams({ ...imageParams, style: e.target.value })}
+              className="w-full p-2 border rounded"
+            >
+              <option value="vivid">Vivid</option>
+              <option value="natural">Natural</option>
+            </select>
+          </div>
+          <div>
+            <label className="block mb-2">Steps: {imageParams.steps}</label>
+            <input
+              type="range"
+              min="20"
+              max="50"
+              value={imageParams.steps}
+              onChange={(e) => setImageParams({ ...imageParams, steps: parseInt(e.target.value) })}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="block mb-2">CFG Scale: {imageParams.cfgScale.toFixed(1)}</label>
+            <input
+              type="range"
+              min="1"
+              max="30"
+              step="0.1"
+              value={imageParams.cfgScale}
+              onChange={(e) => setImageParams({ ...imageParams, cfgScale: parseFloat(e.target.value) })}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="block mb-2">Denoising Strength: {imageParams.denoisingStrength.toFixed(2)}</label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={imageParams.denoisingStrength}
+              onChange={(e) => setImageParams({ ...imageParams, denoisingStrength: parseFloat(e.target.value) })}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="block mb-2">SDXL Sampler:</label>
+            <select
+              value={imageParams.sdxlSampler}
+              onChange={(e) => setImageParams({ ...imageParams, sdxlSampler: e.target.value })}
+              className="w-full p-2 border rounded"
+            >
+              {samplingAlgorithms.map((sampler) => (
+                <option key={sampler} value={sampler}>{sampler}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block mb-2">Dreamshaper Sampler:</label>
+            <select
+              value={imageParams.dreamshaperSampler}
+              onChange={(e) => setImageParams({ ...imageParams, dreamshaperSampler: e.target.value })}
+              className="w-full p-2 border rounded"
+            >
+              {samplingAlgorithms.map((sampler) => (
+                <option key={sampler} value={sampler}>{sampler}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
