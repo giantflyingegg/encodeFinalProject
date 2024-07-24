@@ -8,12 +8,12 @@ const openai = new OpenAI({
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
-  const { text } = await req.json();
+  const { text, voice } = await req.json();
 
   try {
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",
-      voice: "alloy",
+      voice: voice,
       input: text,
     });
 

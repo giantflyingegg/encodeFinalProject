@@ -31,9 +31,7 @@ export default function ModelComparison() {
 
   const generatePrompt = async () => {
     if (!category && !userDescription) return;
-    const promptForAI = `Generate a detailed prompt for image generation of a ${category} ${
-      userDescription ? `with the following elements: ${userDescription}` : ""
-    }. The prompt should be suitable for both SDXL and Dreamshaper models.`;
+    const promptForAI = `Create a concise prompt (50 words max) for image generation that works well with both SDXL and Dreamshaper models. The image should be a ${category}${userDescription ? ` with these elements: ${userDescription}` : ''}.`;
     await append({
       role: "user",
       content: promptForAI,
