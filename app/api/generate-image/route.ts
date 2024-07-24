@@ -10,12 +10,20 @@ async function fetchAvailableSamplers() {
   return await response.json();
 }
 
+async function fetchImageFromUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image from URL: ${response.statusText}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString('base64');
+  return `data:${response.headers.get('content-type')};base64,${base64}`;
+}
+
 async function generateImage(endpoint: string, params: any) {
-  // Fetch available samplers
   const samplers = await fetchAvailableSamplers();
   console.log('Available samplers:', samplers.map((s: any) => s.name));
 
-  // Check if the specified sampler is available, otherwise use a default
   const defaultSampler = 'Euler a';
   if (!samplers.some((s: any) => s.name === params.sampler_name)) {
     console.log(`Sampler "${params.sampler_name}" not found. Using default: ${defaultSampler}`);
@@ -39,14 +47,23 @@ async function generateImage(endpoint: string, params: any) {
 export async function POST(req: Request) {
   console.log('Received request to generate image');
   try {
-    const { prompt, size, quality, style, model } = await req.json();
-    console.log('Request parameters:', { prompt, size, quality, style, model });
+    const { prompt, size, quality, style, model, initImage } = await req.json();
+    console.log('Request parameters:', { prompt, size, quality, style, model, initImage });
 
     const [width, height] = size.split('x').map(Number);
     const steps = quality === 'hd' ? 50 : 30;
     const cfg_scale = style === 'vivid' ? 7.5 : 7.0;
 
-    let params: any = {
+    let initImageData = null;
+    if (initImage) {
+      if (initImage.startsWith('data:image')) {
+        initImageData = initImage.split(',')[1];
+      } else {
+        initImageData = await fetchImageFromUrl(initImage);
+      }
+    }
+
+    const commonParams = {
       prompt: prompt,
       negative_prompt: '',
       width: width,
@@ -59,29 +76,53 @@ export async function POST(req: Request) {
       seed: -1,
     };
 
+    let result;
     if (model === 'sdxl') {
-      params.override_settings = {
-        sd_model_checkpoint: 'sd_xl_base_1.0.safetensors' // Adjust this to your SDXL model filename
+      const sdxlParams = {
+        ...commonParams,
+        override_settings: {
+          sd_model_checkpoint: 'sd_xl_base_1.0.safetensors'
+        }
       };
+
+      if (initImageData) {
+        result = await generateImage('img2img', {
+          ...sdxlParams,
+          init_images: [initImageData],
+          denoising_strength: 0.75,
+        });
+      } else {
+        result = await generateImage('txt2img', sdxlParams);
+      }
     } else if (model === 'dreamshaper') {
-      params.override_settings = {
-        sd_model_checkpoint: 'dreamshaper_8.safetensors' // Adjust this to your Dreamshaper model filename
+      const dreamshaperParams = {
+        ...commonParams,
+        override_settings: {
+          sd_model_checkpoint: 'dreamshaper_8.safetensors'
+        }
       };
+
+      if (initImageData) {
+        result = await generateImage('img2img', {
+          ...dreamshaperParams,
+          init_images: [initImageData],
+          denoising_strength: 0.75,
+        });
+      } else {
+        result = await generateImage('txt2img', dreamshaperParams);
+      }
     } else {
-      throw new Error('Invalid model specified');
+      throw new Error(`Unsupported model: ${model}`);
     }
 
-    console.log(`Generating image with ${model.toUpperCase()}...`);
-    const result = await generateImage('txt2img', params);
-    
     if (!result.images || result.images.length === 0) {
       throw new Error('No image generated');
     }
 
-    const imageBase64 = result.images[0];
-    console.log('Successfully generated image');
+    const finalImage = result.images[0];
+    console.log('Successfully generated final image');
 
-    return NextResponse.json({ imageData: `data:image/png;base64,${imageBase64}` });
+    return NextResponse.json({ imageData: `data:image/png;base64,${finalImage}` });
 
   } catch (error) {
     console.error('Error in image generation:', error);

@@ -19,6 +19,15 @@ const dreamshaperCategories = [
   "Surreal Dreamscapes"
 ];
 
+const ttsVoices = [
+  "alloy",
+  "echo",
+  "fable",
+  "onyx",
+  "nova",
+  "shimmer"
+];
+
 function debounce(func: Function, wait: number) {
   let timeout: NodeJS.Timeout | null = null;
   return function executedFunction(...args: any[]) {
@@ -40,6 +49,7 @@ export default function StableDiffusionShowcase() {
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
+  const [selectedVoice, setSelectedVoice] = useState("alloy");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [imageParams, setImageParams] = useState({
@@ -54,7 +64,6 @@ export default function StableDiffusionShowcase() {
     append,
   } = useChat({
     api: "/api/chat",
-    body: { model, category },
   });
 
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -71,21 +80,21 @@ export default function StableDiffusionShowcase() {
 
   const generatePrompt = async () => {
     if (!category && !userDescription) return;
-    const promptForAI = `Generate a detailed prompt for image generation of a ${category} using ${model === "sdxl" ? "SDXL" : "Dreamshaper"} ${userDescription ? `with the following elements: ${userDescription}` : ''}.`;
+    const promptForAI = `Create a concise prompt (50 words max) for ${model === "sdxl" ? "SDXL" : "Dreamshaper"} to generate a ${category} image${userDescription ? ` with these elements: ${userDescription}` : ''}.`;
     await append({
       role: "user",
       content: promptForAI,
     });
   };
 
-  const generateSpeech = useCallback(async (text: string) => {
+  const generateSpeech = useCallback(async (text: string, voice: string) => {
     if (isGeneratingAudio) return;
     setIsGeneratingAudio(true);
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voice }),
       });
       
       if (!response.ok) {
@@ -106,9 +115,9 @@ export default function StableDiffusionShowcase() {
   }, [isGeneratingAudio]);
 
   const debouncedGenerateSpeech = useCallback(
-    debounce((text: string) => {
+    debounce((text: string, voice: string) => {
       if (text !== lastProcessedMessageRef.current) {
-        generateSpeech(text);
+        generateSpeech(text, voice);
         lastProcessedMessageRef.current = text;
       }
     }, 1000),
@@ -152,10 +161,10 @@ export default function StableDiffusionShowcase() {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === "assistant") {
         setGeneratedPrompt(lastMessage.content);
-        debouncedGenerateSpeech(lastMessage.content);
+        debouncedGenerateSpeech(lastMessage.content, selectedVoice);
       }
     }
-  }, [messages, debouncedGenerateSpeech]);
+  }, [messages, debouncedGenerateSpeech, selectedVoice]);
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
@@ -223,6 +232,25 @@ export default function StableDiffusionShowcase() {
         <div className="mb-4">
           <h2 className="text-xl mb-2">Generated Prompt:</h2>
           <p className="p-2 bg-gray-100 rounded">{generatedPrompt}</p>
+          <div className="mt-2">
+            <h3 className="text-lg mb-2">Select a voice:</h3>
+            <div className="flex flex-wrap gap-2">
+              {ttsVoices.map((voice) => (
+                <button
+                  key={voice}
+                  onClick={() => {
+                    setSelectedVoice(voice);
+                    generateSpeech(generatedPrompt, voice);
+                  }}
+                  className={`px-3 py-1 rounded ${
+                    selectedVoice === voice ? "bg-purple-500 text-white" : "bg-gray-200 text-black"
+                  }`}
+                >
+                  {voice}
+                </button>
+              ))}
+            </div>
+          </div>
           {audioUrl && (
             <div className="mt-2">
               <audio ref={audioRef} controls src={audioUrl} className="w-full" />
