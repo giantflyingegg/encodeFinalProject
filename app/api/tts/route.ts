@@ -10,10 +10,13 @@ export const runtime = 'edge';
 export async function POST(req: Request) {
   const { text, voice } = await req.json();
 
+  // Default voice if not provided
+  const selectedVoice = voice || 'alloy';
+
   try {
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",
-      voice: voice,
+      voice: selectedVoice,
       input: text,
     });
 

@@ -45,6 +45,7 @@ export default function StableDiffusionShowcase() {
     quality: "standard",
     style: "vivid",
   });
+  const [selectedVoice, setSelectedVoice] = useState("alloy");
 
   const {
     messages,
@@ -82,7 +83,7 @@ export default function StableDiffusionShowcase() {
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, voice: selectedVoice }),
       });
       
       if (!response.ok) {
@@ -100,7 +101,7 @@ export default function StableDiffusionShowcase() {
       console.error("Error generating speech:", error);
     }
     setIsGeneratingAudio(false);
-  }, [isGeneratingAudio]);
+  }, [isGeneratingAudio, selectedVoice]);
 
   const debouncedGenerateSpeech = useCallback(
     debounce((text: string) => {
@@ -224,6 +225,24 @@ export default function StableDiffusionShowcase() {
         <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl mb-4 text-creamy-off-white">Generated Prompt:</h2>
           <p className="p-3 bg-medium-blue rounded-lg">{generatedPrompt}</p>
+          <div className="mt-4">
+            <label htmlFor="voice-select" className="block text-sm font-medium text-creamy-off-white">
+              Select Voice:
+            </label>
+            <select
+              id="voice-select"
+              value={selectedVoice}
+              onChange={(e) => setSelectedVoice(e.target.value)}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-medium-blue text-off-white"
+            >
+              <option value="alloy">Alloy</option>
+              <option value="echo">Echo</option>
+              <option value="fable">Fable</option>
+              <option value="onyx">Onyx</option>
+              <option value="nova">Nova</option>
+              <option value="shimmer">Shimmer</option>
+            </select>
+          </div>
           {audioUrl && (
             <div className="mt-4">
               <audio ref={audioRef} controls src={audioUrl} className="w-full" />
