@@ -11,15 +11,6 @@ const categories = [
   "Character Designs",
 ];
 
-const samplingAlgorithms = [
-  "Euler",
-  "Euler a",
-  "Heun",
-  "DPM++ 2M Karras",
-  "DPM++ SDE Karras",
-  "DDIM",
-];
-
 export default function ModelComparison() {
   const [category, setCategory] = useState("");
   const [userDescription, setUserDescription] = useState("");
@@ -31,11 +22,6 @@ export default function ModelComparison() {
     size: "1024x1024",
     quality: "standard",
     style: "vivid",
-    steps: 30,
-    cfgScale: 7,
-    denoisingStrength: 0.7,
-    sdxlSampler: "Euler",
-    dreamshaperSampler: "Euler",
   });
 
   const { messages, append, isLoading } = useChat({
@@ -65,7 +51,6 @@ export default function ModelComparison() {
             prompt: generatedPrompt,
             ...imageParams,
             model: "sdxl",
-            sampler: imageParams.sdxlSampler,
           }),
         }),
         fetch("/api/generate-image", {
@@ -75,7 +60,6 @@ export default function ModelComparison() {
             prompt: generatedPrompt,
             ...imageParams,
             model: "dreamshaper",
-            sampler: imageParams.dreamshaperSampler,
           }),
         }),
       ]);
@@ -106,18 +90,18 @@ export default function ModelComparison() {
   }, [messages]);
 
   return (
-    <div className="flex flex-col w-full max-w-4xl mx-auto py-24 px-4">
-      <h1 className="text-2xl font-bold mb-4">Model Comparison: SDXL vs Dreamshaper</h1>
+    <div className="flex flex-col w-full max-w-4xl mx-auto py-8 px-4 bg-dark-blue text-off-white">
+      <h1 className="text-3xl font-bold mb-8 text-center text-yellowy-white">Model Comparison: SDXL vs Dreamshaper</h1>
 
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Select a Category:</h2>
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Select a Category:</h2>
+        <div className="flex flex-wrap gap-3">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}
-              className={`px-3 py-1 rounded ${
-                category === cat ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+              className={`px-4 py-2 rounded-full text-sm transition-colors duration-200 ${
+                category === cat ? "bg-light-blue text-off-white" : "bg-medium-blue text-accent-blue hover:bg-light-blue hover:text-off-white"
               }`}
             >
               {cat}
@@ -126,12 +110,12 @@ export default function ModelComparison() {
         </div>
       </div>
 
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Your Description:</h2>
+      <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Your Description:</h2>
         <textarea
           value={userDescription}
           onChange={(e) => setUserDescription(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
           rows={3}
           placeholder="Add details to your image description..."
         />
@@ -140,136 +124,76 @@ export default function ModelComparison() {
       <button
         onClick={generatePrompt}
         disabled={(!category && !userDescription) || isLoading}
-        className="bg-green-500 text-white px-4 py-2 rounded mb-4"
+        className={`bg-light-blue text-off-white px-6 py-3 rounded-lg mb-8 transition-colors duration-200 ${
+          (!category && !userDescription) || isLoading
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-accent-blue"
+        }`}
       >
         Generate Image Prompt
       </button>
 
       {generatedPrompt && (
-        <div className="mb-4">
-          <h2 className="text-xl mb-2">Generated Prompt:</h2>
-          <p className="p-2 bg-gray-100 rounded">{generatedPrompt}</p>
+        <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl mb-4 text-creamy-off-white">Generated Prompt:</h2>
+          <p className="p-3 bg-medium-blue rounded-lg">{generatedPrompt}</p>
         </div>
       )}
 
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Image Generation Parameters:</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-2">Size:</label>
-            <select
-              value={imageParams.size}
-              onChange={(e) => setImageParams({ ...imageParams, size: e.target.value })}
-              className="w-full p-2 border rounded"
-            >
-              <option value="1024x1024">1024x1024</option>
-              <option value="896x1152">896x1152</option>
-              <option value="1152x896">1152x896</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">Quality:</label>
-            <select
-              value={imageParams.quality}
-              onChange={(e) => setImageParams({ ...imageParams, quality: e.target.value })}
-              className="w-full p-2 border rounded"
-            >
-              <option value="standard">Standard</option>
-              <option value="hd">HD</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">Style:</label>
-            <select
-              value={imageParams.style}
-              onChange={(e) => setImageParams({ ...imageParams, style: e.target.value })}
-              className="w-full p-2 border rounded"
-            >
-              <option value="vivid">Vivid</option>
-              <option value="natural">Natural</option>
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">Steps: {imageParams.steps}</label>
-            <input
-              type="range"
-              min="20"
-              max="50"
-              value={imageParams.steps}
-              onChange={(e) => setImageParams({ ...imageParams, steps: parseInt(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">CFG Scale: {imageParams.cfgScale.toFixed(1)}</label>
-            <input
-              type="range"
-              min="1"
-              max="30"
-              step="0.1"
-              value={imageParams.cfgScale}
-              onChange={(e) => setImageParams({ ...imageParams, cfgScale: parseFloat(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">Denoising Strength: {imageParams.denoisingStrength.toFixed(2)}</label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={imageParams.denoisingStrength}
-              onChange={(e) => setImageParams({ ...imageParams, denoisingStrength: parseFloat(e.target.value) })}
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block mb-2">SDXL Sampler:</label>
-            <select
-              value={imageParams.sdxlSampler}
-              onChange={(e) => setImageParams({ ...imageParams, sdxlSampler: e.target.value })}
-              className="w-full p-2 border rounded"
-            >
-              {samplingAlgorithms.map((sampler) => (
-                <option key={sampler} value={sampler}>{sampler}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block mb-2">Dreamshaper Sampler:</label>
-            <select
-              value={imageParams.dreamshaperSampler}
-              onChange={(e) => setImageParams({ ...imageParams, dreamshaperSampler: e.target.value })}
-              className="w-full p-2 border rounded"
-            >
-              {samplingAlgorithms.map((sampler) => (
-                <option key={sampler} value={sampler}>{sampler}</option>
-              ))}
-            </select>
-          </div>
+      <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Image Generation Parameters:</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <select
+            value={imageParams.size}
+            onChange={(e) => setImageParams({ ...imageParams, size: e.target.value })}
+            className="p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
+          >
+            <option value="1024x1024">1024x1024</option>
+            <option value="896x1152">896x1152</option>
+            <option value="1152x896">1152x896</option>
+          </select>
+          <select
+            value={imageParams.quality}
+            onChange={(e) => setImageParams({ ...imageParams, quality: e.target.value })}
+            className="p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
+          >
+            <option value="standard">Standard</option>
+            <option value="hd">HD</option>
+          </select>
+          <select
+            value={imageParams.style}
+            onChange={(e) => setImageParams({ ...imageParams, style: e.target.value })}
+            className="p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
+          >
+            <option value="vivid">Vivid</option>
+            <option value="natural">Natural</option>
+          </select>
         </div>
       </div>
 
       <button
         onClick={generateImages}
         disabled={!generatedPrompt || isGenerating}
-        className="bg-purple-500 text-white px-4 py-2 rounded mb-4"
+        className={`bg-light-blue text-off-white px-6 py-3 rounded-lg mb-8 transition-colors duration-200 ${
+          !generatedPrompt || isGenerating
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-accent-blue"
+        }`}
       >
         {isGenerating ? "Generating..." : "Generate Images"}
       </button>
 
-      {isGenerating && <div className="text-center">Generating images...</div>}
+      {isGenerating && <div className="text-center text-accent-blue">Generating images...</div>}
 
       {sdxlImage && dreamshaperImage && (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h2 className="text-xl mb-2">SDXL Generated Image:</h2>
-            <img src={sdxlImage} alt="SDXL generated image" className="w-full" />
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-medium-blue p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl mb-4 text-creamy-off-white">SDXL Generated Image:</h2>
+            <img src={sdxlImage} alt="SDXL generated image" className="w-full rounded-lg shadow-lg" />
           </div>
-          <div>
-            <h2 className="text-xl mb-2">Dreamshaper Generated Image:</h2>
-            <img src={dreamshaperImage} alt="Dreamshaper generated image" className="w-full" />
+          <div className="bg-medium-blue p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl mb-4 text-creamy-off-white">Dreamshaper Generated Image:</h2>
+            <img src={dreamshaperImage} alt="Dreamshaper generated image" className="w-full rounded-lg shadow-lg" />
           </div>
         </div>
       )}
