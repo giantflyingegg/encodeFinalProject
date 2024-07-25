@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useChat } from "ai/react";
 
@@ -17,15 +15,6 @@ const dreamshaperCategories = [
   "Stylized Character Designs",
   "Abstract Concept Visualizations",
   "Surreal Dreamscapes"
-];
-
-const ttsVoices = [
-  "alloy",
-  "echo",
-  "fable",
-  "onyx",
-  "nova",
-  "shimmer"
 ];
 
 function debounce(func: Function, wait: number) {
@@ -49,7 +38,6 @@ export default function StableDiffusionShowcase() {
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
-  const [selectedVoice, setSelectedVoice] = useState("alloy");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [imageParams, setImageParams] = useState({
@@ -80,21 +68,21 @@ export default function StableDiffusionShowcase() {
 
   const generatePrompt = async () => {
     if (!category && !userDescription) return;
-    const promptForAI = `Create a concise prompt (50 words max) for ${model === "sdxl" ? "SDXL" : "Dreamshaper"} to generate a ${category} image${userDescription ? ` with these elements: ${userDescription}` : ''}.`;
+    const promptForAI = `Generate a detailed prompt for image generation of a ${category} using ${model === "sdxl" ? "SDXL" : "Dreamshaper"} ${userDescription ? `with the following elements: ${userDescription}` : ''}.`;
     await append({
       role: "user",
       content: promptForAI,
     });
   };
 
-  const generateSpeech = useCallback(async (text: string, voice: string) => {
+  const generateSpeech = useCallback(async (text: string) => {
     if (isGeneratingAudio) return;
     setIsGeneratingAudio(true);
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice }),
+        body: JSON.stringify({ text }),
       });
       
       if (!response.ok) {
@@ -115,9 +103,9 @@ export default function StableDiffusionShowcase() {
   }, [isGeneratingAudio]);
 
   const debouncedGenerateSpeech = useCallback(
-    debounce((text: string, voice: string) => {
+    debounce((text: string) => {
       if (text !== lastProcessedMessageRef.current) {
-        generateSpeech(text, voice);
+        generateSpeech(text);
         lastProcessedMessageRef.current = text;
       }
     }, 1000),
@@ -161,30 +149,30 @@ export default function StableDiffusionShowcase() {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === "assistant") {
         setGeneratedPrompt(lastMessage.content);
-        debouncedGenerateSpeech(lastMessage.content, selectedVoice);
+        debouncedGenerateSpeech(lastMessage.content);
       }
     }
-  }, [messages, debouncedGenerateSpeech, selectedVoice]);
+  }, [messages, debouncedGenerateSpeech]);
 
   return (
-    <div className="flex flex-col w-full max-w-2xl mx-auto py-24 px-4">
-      <h1 className="text-2xl font-bold mb-4">Stable Diffusion Showcase</h1>
+    <div className="flex flex-col w-full max-w-4xl mx-auto py-8 px-4 bg-[#050A30] text-[#F0F8FF]">
+      <h1 className="text-3xl font-bold mb-8 text-center text-[#5BC0EB]">Stable Diffusion Showcase</h1>
       
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Select a Model:</h2>
-        <div className="flex gap-2">
+      <div className="mb-8 bg-[#0A1A40] p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl mb-4 text-[#5BC0EB]">Select a Model:</h2>
+        <div className="flex gap-4">
           <button
             onClick={() => handleModelSelect("sdxl")}
-            className={`px-3 py-1 rounded ${
-              model === "sdxl" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+            className={`px-6 py-2 rounded-full transition-colors duration-200 ${
+              model === "sdxl" ? "bg-[#0077BE] text-white" : "bg-[#1A2A50] text-[#5BC0EB] hover:bg-[#0077BE] hover:text-white"
             }`}
           >
             SDXL
           </button>
           <button
             onClick={() => handleModelSelect("dreamshaper")}
-            className={`px-3 py-1 rounded ${
-              model === "dreamshaper" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+            className={`px-6 py-2 rounded-full transition-colors duration-200 ${
+              model === "dreamshaper" ? "bg-[#0077BE] text-white" : "bg-[#1A2A50] text-[#5BC0EB] hover:bg-[#0077BE] hover:text-white"
             }`}
           >
             Dreamshaper
@@ -192,15 +180,15 @@ export default function StableDiffusionShowcase() {
         </div>
       </div>
 
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Select a Category:</h2>
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-8 bg-[#0A1A40] p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl mb-4 text-[#5BC0EB]">Select a Category:</h2>
+        <div className="flex flex-wrap gap-3">
           {(model === "sdxl" ? sdxlCategories : dreamshaperCategories).map((cat) => (
             <button
               key={cat}
               onClick={() => handleCategorySelect(cat)}
-              className={`px-3 py-1 rounded ${
-                category === cat ? "bg-green-500 text-white" : "bg-gray-200 text-black"
+              className={`px-4 py-2 rounded-full text-sm transition-colors duration-200 ${
+                category === cat ? "bg-[#0077BE] text-white" : "bg-[#1A2A50] text-[#5BC0EB] hover:bg-[#0077BE] hover:text-white"
               }`}
             >
               {cat}
@@ -209,13 +197,13 @@ export default function StableDiffusionShowcase() {
         </div>
       </div>
 
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Your Description:</h2>
+      <div className="mb-8 bg-[#0A1A40] p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl mb-4 text-[#5BC0EB]">Your Description:</h2>
         <textarea
           value={userDescription}
           onChange={(e) => setUserDescription(e.target.value)}
-          className="w-full p-2 border rounded"
-          rows={3}
+          className="w-full p-3 bg-[#1A2A50] text-[#F0F8FF] border border-[#0077BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5BC0EB]"
+          rows={4}
           placeholder="Add details to your image description..."
         />
       </div>
@@ -223,49 +211,34 @@ export default function StableDiffusionShowcase() {
       <button
         onClick={generatePrompt}
         disabled={(!category && !userDescription) || isLoading}
-        className="bg-green-500 text-white px-4 py-2 rounded mb-4"
+        className={`bg-[#0077BE] text-white px-6 py-3 rounded-lg mb-8 transition-colors duration-200 ${
+          (!category && !userDescription) || isLoading
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-[#5BC0EB]"
+        }`}
       >
         Generate Image Prompt
       </button>
 
       {generatedPrompt && (
-        <div className="mb-4">
-          <h2 className="text-xl mb-2">Generated Prompt:</h2>
-          <p className="p-2 bg-gray-100 rounded">{generatedPrompt}</p>
-          <div className="mt-2">
-            <h3 className="text-lg mb-2">Select a voice:</h3>
-            <div className="flex flex-wrap gap-2">
-              {ttsVoices.map((voice) => (
-                <button
-                  key={voice}
-                  onClick={() => {
-                    setSelectedVoice(voice);
-                    generateSpeech(generatedPrompt, voice);
-                  }}
-                  className={`px-3 py-1 rounded ${
-                    selectedVoice === voice ? "bg-purple-500 text-white" : "bg-gray-200 text-black"
-                  }`}
-                >
-                  {voice}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="mb-8 bg-[#0A1A40] p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl mb-4 text-[#5BC0EB]">Generated Prompt:</h2>
+          <p className="p-3 bg-[#1A2A50] rounded-lg">{generatedPrompt}</p>
           {audioUrl && (
-            <div className="mt-2">
+            <div className="mt-4">
               <audio ref={audioRef} controls src={audioUrl} className="w-full" />
             </div>
           )}
         </div>
       )}
 
-      <div className="mb-4">
-        <h2 className="text-xl mb-2">Image Generation Parameters:</h2>
-        <div className="flex flex-col gap-2">
+      <div className="mb-8 bg-[#0A1A40] p-6 rounded-lg shadow-lg">
+        <h2 className="text-2xl mb-4 text-[#5BC0EB]">Image Generation Parameters:</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <select
             value={imageParams.size}
             onChange={(e) => setImageParams({ ...imageParams, size: e.target.value })}
-            className="p-2 border rounded"
+            className="p-3 bg-[#1A2A50] text-[#F0F8FF] border border-[#0077BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5BC0EB]"
           >
             <option value="1024x1024">1024x1024</option>
             <option value="896x1152">896x1152</option>
@@ -274,7 +247,7 @@ export default function StableDiffusionShowcase() {
           <select
             value={imageParams.quality}
             onChange={(e) => setImageParams({ ...imageParams, quality: e.target.value })}
-            className="p-2 border rounded"
+            className="p-3 bg-[#1A2A50] text-[#F0F8FF] border border-[#0077BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5BC0EB]"
           >
             <option value="standard">Standard</option>
             <option value="hd">HD</option>
@@ -282,7 +255,7 @@ export default function StableDiffusionShowcase() {
           <select
             value={imageParams.style}
             onChange={(e) => setImageParams({ ...imageParams, style: e.target.value })}
-            className="p-2 border rounded"
+            className="p-3 bg-[#1A2A50] text-[#F0F8FF] border border-[#0077BE] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5BC0EB]"
           >
             <option value="vivid">Vivid</option>
             <option value="natural">Natural</option>
@@ -293,18 +266,22 @@ export default function StableDiffusionShowcase() {
       <button
         onClick={generateImage}
         disabled={!generatedPrompt || isGeneratingImage}
-        className="bg-purple-500 text-white px-4 py-2 rounded mb-4"
+        className={`bg-[#0077BE] text-white px-6 py-3 rounded-lg mb-8 transition-colors duration-200 ${
+          !generatedPrompt || isGeneratingImage
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-[#5BC0EB]"
+        }`}
       >
         {isGeneratingImage ? "Generating..." : `Generate Image with ${model === "sdxl" ? "SDXL" : "Dreamshaper"}`}
       </button>
 
-      {isGeneratingImage && <div className="text-center">Generating image...</div>}
-      {isGeneratingAudio && <div className="text-center">Generating audio...</div>}
+      {isGeneratingImage && <div className="text-center text-[#5BC0EB]">Generating image...</div>}
+      {isGeneratingAudio && <div className="text-center text-[#5BC0EB]">Generating audio...</div>}
 
       {imageUrl && (
-        <div className="mt-4">
-          <h2 className="text-xl mb-2">Generated Image:</h2>
-          <img src={imageUrl} alt="Generated image" className="w-full mb-4" />
+        <div className="mt-8 bg-[#0A1A40] p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl mb-4 text-[#5BC0EB]">Generated Image:</h2>
+          <img src={imageUrl} alt="Generated image" className="w-full rounded-lg shadow-lg" />
         </div>
       )}
     </div>
