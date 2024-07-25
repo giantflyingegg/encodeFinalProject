@@ -156,10 +156,10 @@ export default function StableDiffusionShowcase() {
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto py-8 px-4 bg-dark-blue text-off-white">
-      <h1 className="text-3xl font-bold mb-8 text-center text-accent-blue">Stable Diffusion Showcase</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center text-yellowy-white">Stable Diffusion Showcase</h1>
       
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl mb-4 text-accent-blue">Select a Model:</h2>
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Select a Model:</h2>
         <div className="flex gap-4">
           <button
             onClick={() => handleModelSelect("sdxl")}
@@ -181,7 +181,7 @@ export default function StableDiffusionShowcase() {
       </div>
 
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl mb-4 text-accent-blue">Select a Category:</h2>
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Select a Category:</h2>
         <div className="flex flex-wrap gap-3">
           {(model === "sdxl" ? sdxlCategories : dreamshaperCategories).map((cat) => (
             <button
@@ -198,7 +198,7 @@ export default function StableDiffusionShowcase() {
       </div>
 
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl mb-4 text-accent-blue">Your Description:</h2>
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Your Description:</h2>
         <textarea
           value={userDescription}
           onChange={(e) => setUserDescription(e.target.value)}
@@ -222,7 +222,7 @@ export default function StableDiffusionShowcase() {
 
       {generatedPrompt && (
         <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl mb-4 text-accent-blue">Generated Prompt:</h2>
+          <h2 className="text-2xl mb-4 text-creamy-off-white">Generated Prompt:</h2>
           <p className="p-3 bg-medium-blue rounded-lg">{generatedPrompt}</p>
           {audioUrl && (
             <div className="mt-4">
@@ -233,7 +233,7 @@ export default function StableDiffusionShowcase() {
       )}
 
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl mb-4 text-accent-blue">Image Generation Parameters:</h2>
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Image Generation Parameters:</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <select
             value={imageParams.size}
@@ -280,7 +280,7 @@ export default function StableDiffusionShowcase() {
 
       {imageUrl && (
         <div className="mt-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl mb-4 text-accent-blue">Generated Image:</h2>
+          <h2 className="text-2xl mb-4 text-creamy-off-white">Generated Image:</h2>
           <img src={imageUrl} alt="Generated image" className="w-full rounded-lg shadow-lg" />
         </div>
       )}

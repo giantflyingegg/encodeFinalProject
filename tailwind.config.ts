@@ -14,6 +14,8 @@ const config: Config = {
         'light-blue': '#0077BE',
         'accent-blue': '#5BC0EB',
         'off-white': '#F0F8FF',
+        'yellowy-white': '#FFFDE7', // New color for page headings
+        'creamy-off-white': '#FFF8E1', // New color for page subheadings
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

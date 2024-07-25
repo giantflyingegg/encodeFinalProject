@@ -91,10 +91,10 @@ export default function ModelComparison() {
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto py-8 px-4 bg-dark-blue text-off-white">
-      <h1 className="text-3xl font-bold mb-8 text-center text-accent-blue">Model Comparison: SDXL vs Dreamshaper</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center text-yellowy-white">Model Comparison: SDXL vs Dreamshaper</h1>
 
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl mb-4 text-accent-blue">Select a Category:</h2>
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Select a Category:</h2>
         <div className="flex flex-wrap gap-3">
           {categories.map((cat) => (
             <button
@@ -111,7 +111,7 @@ export default function ModelComparison() {
       </div>
 
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl mb-4 text-accent-blue">Your Description:</h2>
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Your Description:</h2>
         <textarea
           value={userDescription}
           onChange={(e) => setUserDescription(e.target.value)}
@@ -135,13 +135,13 @@ export default function ModelComparison() {
 
       {generatedPrompt && (
         <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl mb-4 text-accent-blue">Generated Prompt:</h2>
+          <h2 className="text-2xl mb-4 text-creamy-off-white">Generated Prompt:</h2>
           <p className="p-3 bg-medium-blue rounded-lg">{generatedPrompt}</p>
         </div>
       )}
 
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl mb-4 text-accent-blue">Image Generation Parameters:</h2>
+        <h2 className="text-2xl mb-4 text-creamy-off-white">Image Generation Parameters:</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <select
             value={imageParams.size}
@@ -188,11 +188,11 @@ export default function ModelComparison() {
       {sdxlImage && dreamshaperImage && (
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-medium-blue p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl mb-4 text-accent-blue">SDXL Generated Image:</h2>
+            <h2 className="text-2xl mb-4 text-creamy-off-white">SDXL Generated Image:</h2>
             <img src={sdxlImage} alt="SDXL generated image" className="w-full rounded-lg shadow-lg" />
           </div>
           <div className="bg-medium-blue p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl mb-4 text-accent-blue">Dreamshaper Generated Image:</h2>
+            <h2 className="text-2xl mb-4 text-creamy-off-white">Dreamshaper Generated Image:</h2>
             <img src={dreamshaperImage} alt="Dreamshaper generated image" className="w-full rounded-lg shadow-lg" />
           </div>
         </div>
