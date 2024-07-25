@@ -17,6 +17,8 @@ const dreamshaperCategories = [
   "Surreal Dreamscapes"
 ];
 
+const voices = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
+
 function debounce(func: Function, wait: number) {
   let timeout: NodeJS.Timeout | null = null;
   return function executedFunction(...args: any[]) {
@@ -76,14 +78,14 @@ export default function StableDiffusionShowcase() {
     });
   };
 
-  const generateSpeech = useCallback(async (text: string) => {
+  const generateSpeech = useCallback(async (text: string, voice: string) => {
     if (isGeneratingAudio) return;
     setIsGeneratingAudio(true);
     try {
       const response = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: selectedVoice }),
+        body: JSON.stringify({ text, voice }),
       });
       
       if (!response.ok) {
@@ -95,22 +97,30 @@ export default function StableDiffusionShowcase() {
       setAudioUrl(audioUrl);
 
       if (audioRef.current) {
+        audioRef.current.load(); // Load the new audio
         audioRef.current.play();
       }
     } catch (error) {
       console.error("Error generating speech:", error);
     }
     setIsGeneratingAudio(false);
-  }, [isGeneratingAudio, selectedVoice]);
+  }, [isGeneratingAudio]);
+
+  const handleVoiceChange = (voice: string) => {
+    setSelectedVoice(voice);
+    if (generatedPrompt) {
+      generateSpeech(generatedPrompt, voice);
+    }
+  };
 
   const debouncedGenerateSpeech = useCallback(
     debounce((text: string) => {
       if (text !== lastProcessedMessageRef.current) {
-        generateSpeech(text);
+        generateSpeech(text, selectedVoice);
         lastProcessedMessageRef.current = text;
       }
     }, 1000),
-    [generateSpeech]
+    [generateSpeech, selectedVoice]
   );
 
   const generateImage = async () => {
@@ -226,22 +236,22 @@ export default function StableDiffusionShowcase() {
           <h2 className="text-2xl mb-4 text-creamy-off-white">Generated Prompt:</h2>
           <p className="p-3 bg-medium-blue rounded-lg">{generatedPrompt}</p>
           <div className="mt-4">
-            <label htmlFor="voice-select" className="block text-sm font-medium text-creamy-off-white">
-              Select Voice:
-            </label>
-            <select
-              id="voice-select"
-              value={selectedVoice}
-              onChange={(e) => setSelectedVoice(e.target.value)}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-medium-blue text-off-white"
-            >
-              <option value="alloy">Alloy</option>
-              <option value="echo">Echo</option>
-              <option value="fable">Fable</option>
-              <option value="onyx">Onyx</option>
-              <option value="nova">Nova</option>
-              <option value="shimmer">Shimmer</option>
-            </select>
+            <h3 className="text-xl mb-2 text-creamy-off-white">Select Voice:</h3>
+            <div className="flex flex-wrap gap-2">
+              {voices.map((voice) => (
+                <button
+                  key={voice}
+                  onClick={() => handleVoiceChange(voice)}
+                  className={`px-4 py-2 rounded-full text-sm transition-colors duration-200 ${
+                    selectedVoice === voice
+                      ? "bg-light-blue text-off-white"
+                      : "bg-medium-blue text-accent-blue hover:bg-light-blue hover:text-off-white"
+                  }`}
+                >
+                  {voice}
+                </button>
+              ))}
+            </div>
           </div>
           {audioUrl && (
             <div className="mt-4">
