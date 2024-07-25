@@ -71,7 +71,7 @@ export default function StableDiffusionShowcase() {
 
   const generatePrompt = async () => {
     if (!category && !userDescription) return;
-    const promptForAI = `Generate a detailed prompt for image generation of a ${category} using ${model === "sdxl" ? "SDXL" : "Dreamshaper"} ${userDescription ? `with the following elements: ${userDescription}` : ''}.`;
+    const promptForAI = `Generate a detailed prompt of less than 100 words for image generation of a ${category} using ${model === "sdxl" ? "SDXL" : "Dreamshaper"} ${userDescription ? `with the following elements: ${userDescription}` : ''}.`;
     await append({
       role: "user",
       content: promptForAI,

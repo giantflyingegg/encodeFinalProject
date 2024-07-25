@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { useChat } from "ai/react";
 
@@ -11,6 +9,27 @@ const categories = [
   "Character Designs",
 ];
 
+interface ImageParams {
+  size: string;
+  steps: number;
+  cfg_scale: number;
+  sampler: string;
+}
+
+const defaultImageParams: ImageParams = {
+  size: "1024x1024",
+  steps: 30,
+  cfg_scale: 7.5,
+  sampler: "DPM++ 2M Karras",
+};
+
+const samplers = [
+  "DPM++ 2M Karras",
+  "Euler a",
+  "DPM++ SDE Karras",
+  "DDIM",
+];
+
 export default function ModelComparison() {
   const [category, setCategory] = useState("");
   const [userDescription, setUserDescription] = useState("");
@@ -18,11 +37,8 @@ export default function ModelComparison() {
   const [sdxlImage, setSdxlImage] = useState("");
   const [dreamshaperImage, setDreamshaperImage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [imageParams, setImageParams] = useState({
-    size: "1024x1024",
-    quality: "standard",
-    style: "vivid",
-  });
+  const [sdxlParams, setSdxlParams] = useState<ImageParams>({ ...defaultImageParams });
+  const [dreamshaperParams, setDreamshaperParams] = useState<ImageParams>({ ...defaultImageParams });
 
   const { messages, append, isLoading } = useChat({
     api: "/api/chat",
@@ -31,7 +47,7 @@ export default function ModelComparison() {
 
   const generatePrompt = async () => {
     if (!category && !userDescription) return;
-    const promptForAI = `Generate a detailed prompt for image generation of a ${category} ${
+    const promptForAI = `Generate a detailed prompt of less than 100 words for image generation of a ${category} ${
       userDescription ? `with the following elements: ${userDescription}` : ""
     }. The prompt should be suitable for both SDXL and Dreamshaper models.`;
     await append({
@@ -49,7 +65,7 @@ export default function ModelComparison() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: generatedPrompt,
-            ...imageParams,
+            ...sdxlParams,
             model: "sdxl",
           }),
         }),
@@ -58,7 +74,7 @@ export default function ModelComparison() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: generatedPrompt,
-            ...imageParams,
+            ...dreamshaperParams,
             model: "dreamshaper",
           }),
         }),
@@ -88,6 +104,68 @@ export default function ModelComparison() {
       }
     }
   }, [messages]);
+
+  const renderModelControls = (model: "sdxl" | "dreamshaper") => {
+    const params = model === "sdxl" ? sdxlParams : dreamshaperParams;
+    const setParams = model === "sdxl" ? setSdxlParams : setDreamshaperParams;
+
+    return (
+      <div className="mb-4">
+        <h3 className="text-xl mb-2 text-creamy-off-white">{model === "sdxl" ? "SDXL" : "Dreamshaper"} Parameters:</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-creamy-off-white mb-1">Image Size</label>
+            <select
+              value={params.size}
+              onChange={(e) => setParams({ ...params, size: e.target.value })}
+              className="w-full p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
+            >
+              <option value="1024x1024">1024x1024</option>
+              <option value="896x1152">896x1152</option>
+              <option value="1152x896">1152x896</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-creamy-off-white mb-1">Steps</label>
+            <input
+              type="number"
+              value={params.steps}
+              onChange={(e) => setParams({ ...params, steps: parseInt(e.target.value) })}
+              min={1}
+              max={150}
+              className="w-full p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
+              placeholder="Steps"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-creamy-off-white mb-1">CFG Scale</label>
+            <input
+              type="number"
+              value={params.cfg_scale}
+              onChange={(e) => setParams({ ...params, cfg_scale: parseFloat(e.target.value) })}
+              min={1}
+              max={30}
+              step={0.1}
+              className="w-full p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
+              placeholder="CFG Scale"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-creamy-off-white mb-1">Sampler</label>
+            <select
+              value={params.sampler}
+              onChange={(e) => setParams({ ...params, sampler: e.target.value })}
+              className="w-full p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
+            >
+              {samplers.map((sampler) => (
+                <option key={sampler} value={sampler}>{sampler}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col w-full max-w-4xl mx-auto py-8 px-4 bg-dark-blue text-off-white">
@@ -142,33 +220,8 @@ export default function ModelComparison() {
 
       <div className="mb-8 bg-medium-blue p-6 rounded-lg shadow-lg">
         <h2 className="text-2xl mb-4 text-creamy-off-white">Image Generation Parameters:</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <select
-            value={imageParams.size}
-            onChange={(e) => setImageParams({ ...imageParams, size: e.target.value })}
-            className="p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
-          >
-            <option value="1024x1024">1024x1024</option>
-            <option value="896x1152">896x1152</option>
-            <option value="1152x896">1152x896</option>
-          </select>
-          <select
-            value={imageParams.quality}
-            onChange={(e) => setImageParams({ ...imageParams, quality: e.target.value })}
-            className="p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
-          >
-            <option value="standard">Standard</option>
-            <option value="hd">HD</option>
-          </select>
-          <select
-            value={imageParams.style}
-            onChange={(e) => setImageParams({ ...imageParams, style: e.target.value })}
-            className="p-3 bg-medium-blue text-off-white border border-light-blue rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-blue"
-          >
-            <option value="vivid">Vivid</option>
-            <option value="natural">Natural</option>
-          </select>
-        </div>
+        {renderModelControls("sdxl")}
+        {renderModelControls("dreamshaper")}
       </div>
 
       <button
